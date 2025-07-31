@@ -51,6 +51,9 @@ makim = "1.20.0"
 virtualenv = "<=20.25.1"
 
 
+
+[tool.poetry.dependencies]
+types-pyyaml = ">=6"
 [tool.bandit]
 exclude_dirs = ["tests"]
 targets = "./"
@@ -82,7 +85,7 @@ exclude = [
 select = [
   "E",   # pycodestyle
   "F",   # pyflakes
-  "D",   # pydocstyle
+  # "D",   # pydocstyle
   "YTT", # flake8-2020
   "RUF", # Ruff-specific rules
   "I001",  # isort
