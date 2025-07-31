@@ -1,6 +1,13 @@
 """Doxs."""
 
+from __future__ import annotations
+
+import sys
+import types
+
+from importlib import import_module
 from importlib import metadata as importlib_metadata
+from typing import Any
 
 
 def get_version() -> str:
@@ -11,11 +18,28 @@ def get_version() -> str:
         return '0.1.0'  # semantic-release
 
 
+core = import_module('.core', __name__)
+apply = core.apply
+Annotation = core.Annotation
+
+
+class _CallableModule(types.ModuleType):
+    """A module that can also be used as a decorator."""
+
+    # allow @doxs(...)
+    def __call__(self, _obj: Any = None, **kwargs: Any) -> Any:
+        """Allow calling the module with @doxs"""
+        return apply(_obj, **kwargs)
+
+
+self_module = sys.modules[__name__]
+self_module.__class__ = _CallableModule
+
+
 version = get_version()
 
 __version__ = version
 __author__ = 'Ivan Ogasawara'
 __email__ = 'ivan.ogasawara@gmail.com'
 
-
-from doxs.core import *  # noqa: F403, E402
+__all__ = ['Annotation', '__author__', '__email__', '__version__', 'apply']

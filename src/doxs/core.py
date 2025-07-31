@@ -6,7 +6,7 @@ Turns YAML-formatted docstrings into enriched *numpydoc* sections.
 Example
 -------
 ```python
-@doxs.apply  # or simply ``@doxs`` if you re-export apply at top level
+@doxs  # or simply ``@doxs`` if you re-export apply at top level
 def add(x: int, y: int) -> int:
     """
     title: Return the sum of two integers
@@ -229,8 +229,10 @@ def _apply_to_func(
             else inspect._empty
         )
 
-        typ, _, default_val = _parse_annotation(annotation, default_val)
-        desc = param_descs.get(name, '')
+        typ, desc_from_ann, default_val = _parse_annotation(
+            annotation, default_val
+        )
+        desc = param_descs.get(name, desc_from_ann or '')
 
         first = f'{name} : {typ}'
         if default_val is not inspect._empty:

@@ -17,7 +17,7 @@ import doxs
 # ---------------------------------------------------------------------------
 
 
-@doxs.apply  # no explicit kwargs - YAML supplies everything
+@doxs  # no explicit kwargs - YAML supplies everything
 def add(x: int, y: int) -> int:
     """
     title: Return the sum of two integers
@@ -38,7 +38,7 @@ def add(x: int, y: int) -> int:
 T = Any  # showcase that *any* type passes through
 
 
-@doxs.apply
+@doxs
 def identity(value: T) -> T:
     """
     title: Identity function
@@ -51,7 +51,7 @@ def identity(value: T) -> T:
 # ---------------------------------------------------------------------------
 
 
-@doxs.apply
+@doxs
 class BasicCalculator:
     """
     title: Very small demo calculator
@@ -70,7 +70,7 @@ class BasicCalculator:
         """
         return self.a + self.b
 
-    @doxs.apply
+    @doxs
     def multiply(self, scalar: int) -> int:
         """
         title: Multiply by *scalar*
@@ -86,7 +86,7 @@ class BasicCalculator:
 # ---------------------------------------------------------------------------
 
 
-@doxs.apply
+@doxs
 class FancyCalculator:
     """
     title: Showcase of ``doxs.Annotation`` inline usage
