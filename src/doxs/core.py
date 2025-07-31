@@ -17,14 +17,21 @@ from typing import (
     List,
     Optional,
     Type,
+    TypeVar,
     Union,
     get_args,
     get_origin,
     get_type_hints,
 )
 
+from typing_extensions import ParamSpec
+
 __all__ = ['Annotation', 'apply']
 _SENTINEL = '__doxs_applied__'
+
+T = TypeVar('T', bound=type)
+P = ParamSpec('P')  # captures the parameter list
+R = TypeVar('R')  # captures the return type
 
 
 class Annotation:
@@ -41,7 +48,7 @@ class Annotation:
     """
 
     def __init__(
-        self, type_: Type, description: str, default: Any = inspect._empty
+        self, type_: Type[Any], description: str, default: Any = inspect._empty
     ) -> None:
         """Initialize class instance."""
         self.type = type_
@@ -92,8 +99,8 @@ def apply(
 
 
 def _apply_to_class(
-    cls: Type, *, class_vars: Optional[Dict[str, str]] = None
-) -> Type:
+    cls: T, *, class_vars: Optional[Dict[str, str]] = None
+) -> T:
     """Inject an *Attributes* section into *cls*'s docstring."""
     if getattr(cls, _SENTINEL, False):
         return cls
@@ -113,11 +120,11 @@ def _apply_to_class(
 
 
 def _apply_to_func(
-    func: Callable,
+    func: Callable[P, R],
     *,
     params: Optional[Dict[str, str]] = None,
     returns: Optional[Union[str, List[str]]] = None,
-) -> Callable:
+) -> Callable[P, R]:
     """Inject *Parameters* and *Returns* sections into *func*'s docstring."""
     if getattr(func, _SENTINEL, False):
         return func
@@ -174,7 +181,9 @@ def _apply_to_func(
     return func
 
 
-def _inject_attributes_section(cls: Type, overrides: Dict[str, str]) -> None:
+def _inject_attributes_section(
+    cls: Type[Any], overrides: Dict[str, str]
+) -> None:
     annotations = getattr(cls, '__annotations__', {})
     if not annotations:
         return
@@ -200,7 +209,7 @@ def _inject_attributes_section(cls: Type, overrides: Dict[str, str]) -> None:
     cls.__doc__ = _merge_docstring(cls.__doc__, attributes_block)
 
 
-def _parse_annotation(annotation: Any, default: Any):
+def _parse_annotation(annotation: Any, default: Any) -> tuple[str, str, Any]:
     """Return ``(type_name, description, default)`` from *annotation*."""
     desc = ''
     typ_name = ''
