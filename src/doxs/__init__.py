@@ -16,3 +16,6 @@ version = get_version()
 __version__ = version
 __author__ = 'Ivan Ogasawara'
 __email__ = 'ivan.ogasawara@gmail.com'
+
+
+from doxs.core import *  # noqa: F403, E402

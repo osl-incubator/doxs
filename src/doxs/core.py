@@ -151,12 +151,16 @@ def _apply_to_func(
         if name in params:
             desc = params[name]
 
-        param_lines.append(f'{name} : {typ}')
+        param_annotation = typ
+        if default is not inspect._empty:
+            sep = ''
+            if param_annotation:
+                sep = ', '
+            param_annotation += sep + f'default is `{default!r}`.'
+
+        param_lines.append(f'{name} : {param_annotation}')
         if desc:
             param_lines.append(f'    {desc}')
-        if default is not inspect._empty:
-            param_lines.append(f'    Default: {default!r}')
-        param_lines.append('')
 
     param_block = '\n'.join(param_lines).rstrip() or 'None'
 
@@ -168,13 +172,13 @@ def _apply_to_func(
         ret_desc = '; '.join(returns) if isinstance(returns, list) else returns
 
     if not ret_type or ret_type == 'None':
-        returns_block = 'Returns:\n--------\nNone'
+        returns_block = 'Returns\n-------\nNone'
     else:
-        returns_block = 'Returns:\n--------\n' + ret_type
+        returns_block = 'Returns\n-------\n' + ret_type
         if ret_desc:
             returns_block += f'\n    {ret_desc}'
 
-    generated = f'Parameters:\n-----------\n{param_block}\n\n{returns_block}'
+    generated = f'Parameters\n----------\n{param_block}\n\n{returns_block}'
 
     func.__doc__ = _merge_docstring(func.__doc__, generated)
     setattr(func, _SENTINEL, True)
@@ -204,7 +208,7 @@ def _inject_attributes_section(
         lines.append('')
 
     block = '\n'.join(lines).rstrip()
-    attributes_block = f'Attributes:\n-----------\n{block}'
+    attributes_block = f'Attributes\n----------\n{block}'
 
     cls.__doc__ = _merge_docstring(cls.__doc__, attributes_block)
 

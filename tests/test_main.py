@@ -16,11 +16,6 @@ except (
     Annotation = importlib.import_module('core').Annotation  # type: ignore
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 def _strip_indent(text: str) -> str:
     """Normalize indentation for reliable assertions."""
     lines = [ln.rstrip() for ln in text.splitlines()]
@@ -30,11 +25,6 @@ def _strip_indent(text: str) -> str:
     while lines and not lines[-1]:
         lines.pop()
     return '\n'.join(lines)
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 
 def test_apply_on_function_generates_parameters_and_returns_sections():
