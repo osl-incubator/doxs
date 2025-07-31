@@ -1,9 +1,7 @@
 '''
 Doxs core library - YAML-first flavour.
 
-* Turns YAML-formatted docstrings into enriched *numpydoc* sections.
-* No need to pass ``params=`` / ``returns=`` via the decorator - just write
-  them under a YAML ``parameters`` / ``returns`` key.
+Turns YAML-formatted docstrings into enriched *numpydoc* sections.
 
 Example
 -------
@@ -14,7 +12,7 @@ def add(x: int, y: int) -> int:
     title: Return the sum of two integers
     summary: |
         This function returns the sum of two integer numbers.
-    parameters:  #noqa
+    parameters:  # noqa
         x: The first operand
         y: The second operand
     returns: Sum of *x* and *y*
