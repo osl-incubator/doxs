@@ -1,11 +1,12 @@
 default_stages:
   - pre-commit
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
-      - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: end-of-file-fixer
       - id: check-json
       - id: check-toml
       - id: check-xml
@@ -15,33 +16,31 @@ repos:
       - id: check-docstring-first
       - id: detect-private-key
 
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v3.1.0"
+    hooks:
+      - id: prettier
+
   - repo: local
     hooks:
-      # NOTE: This is a total unnecessary check, just used as part of the
-      #       template. Remove this after creating the template.
-      - id: check-python
-        name: check-python
-        entry: python --version
-        language: system
-        pass_filenames: no
-
-      - id: ruff-linter
-        name: ruff-linter
-        entry: ruff check --fix
-        language: system
-        pass_filenames: true
-        require_serial: yes
-        files: "./"
-        types:
-          - python
-
       - id: ruff-format
         name: ruff-format
         entry: ruff format
+        exclude: |
+          (?x)(
+            docs
+          )
         language: system
         pass_filenames: true
-        require_serial: yes
-        files: "./"
+        types:
+          - python
+
+      - id: ruff-linter
+        name: ruff-linter
+        entry: ruff check
+        language: system
+        exclude: "docs/"
+        pass_filenames: true
         types:
           - python
 
@@ -49,7 +48,7 @@ repos:
         name: mypy
         entry: mypy
         language: system
-        files: "src/doxs"
+        files: "makim/"
         pass_filenames: true
         types:
           - python
@@ -58,26 +57,17 @@ repos:
         name: bandit
         entry: bandit
         language: system
-        args: ["--configfile", "pyproject.toml", "-iii", "-lll"]
+        args: ["--configfile", "pyproject.toml"]
         pass_filenames: true
         types:
           - python
 
       - id: vulture
         name: vulture
-        entry: vulture
+        entry: vulture --min-confidence 80
         language: system
-        files: "src/doxs"
+        files: "makim/"
         description: Find unused Python code.
-        pass_filenames: true
-        types:
-          - python
-
-      - id: mccabe
-        name: mccabe
-        entry: python -m mccabe --min 10
-        language: system
-        files: "src/doxs"
         pass_filenames: true
         types:
           - python
