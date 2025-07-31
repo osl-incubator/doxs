@@ -37,7 +37,9 @@ from __future__ import annotations
 import inspect
 import textwrap
 
+from dataclasses import dataclass
 from typing import (
+    Annotated,
     Any,
     Callable,
     Dict,
@@ -51,20 +53,16 @@ from typing import (
     get_type_hints,
 )
 
-import yaml  # PyYAML dependency
+import yaml
 
 from typing_extensions import ParamSpec
 
-__all__ = ['Annotation', 'apply']
+__all__ = ['DocString', 'apply']
 _SENTINEL = '__doxs_applied__'
 
 T = TypeVar('T', bound=type)
 P = ParamSpec('P')
 R = TypeVar('R')
-
-# ---------------------------------------------------------------------------
-# Small helper to parse YAML docstrings safely
-# ---------------------------------------------------------------------------
 
 
 def _parse_yaml_doc(raw: Optional[str]) -> Dict[str, Any]:
@@ -95,36 +93,9 @@ def _compose_narrative(yaml_data: Dict[str, Any]) -> str:
     return '\n\n'.join(parts).strip()
 
 
-# ---------------------------------------------------------------------------
-# Public helper class
-# ---------------------------------------------------------------------------
-
-
-class Annotation:
-    """Wrap a type annotation with extra metadata."""
-
-    def __init__(
-        self, type_: Type[Any], description: str, default: Any = inspect._empty
-    ) -> None:
-        """Initialize the class object."""
-        self.type = type_
-        self.description = description
-        self.default = default
-
-    def __repr__(self) -> str:  # pragma: no cover
-        """Return the object representation."""
-        default_repr = (
-            '…' if self.default is inspect._empty else repr(self.default)
-        )
-        return (
-            f'Annotation({self.type.__name__}, '
-            f'{self.description!r}, default={default_repr})'
-        )
-
-
-# ---------------------------------------------------------------------------
-# Decorator entry point
-# ---------------------------------------------------------------------------
+@dataclass
+class DocString:
+    description: str
 
 
 def apply(
@@ -156,11 +127,6 @@ def apply(
     return decorator if _obj is None else decorator(_obj)
 
 
-# ---------------------------------------------------------------------------
-# Class handling
-# ---------------------------------------------------------------------------
-
-
 def _apply_to_class(
     cls: T, *, yaml_first: bool, overrides: Dict[str, str]
 ) -> T:
@@ -188,11 +154,6 @@ def _apply_to_class(
     return cls
 
 
-# ---------------------------------------------------------------------------
-# Function / method handling
-# ---------------------------------------------------------------------------
-
-
 def _apply_to_func(
     func: Callable[P, R],
     *,
@@ -214,7 +175,7 @@ def _apply_to_func(
     )
 
     sig = inspect.signature(func)
-    hints = get_type_hints(func)
+    hints = get_type_hints(func, include_extras=True)
 
     # ---------------- "Parameters" block ----------------
     param_lines: List[str] = []
@@ -272,11 +233,6 @@ def _apply_to_func(
     return func
 
 
-# ---------------------------------------------------------------------------
-# Attributes helper
-# ---------------------------------------------------------------------------
-
-
 def _inject_attributes_section(
     cls: Type[Any], descriptions: Dict[str, str]
 ) -> None:
@@ -305,23 +261,22 @@ def _inject_attributes_section(
         )
 
 
-# ---------------------------------------------------------------------------
-# Shared utilities
-# ---------------------------------------------------------------------------
-
-
 def _parse_annotation(annotation: Any, default: Any) -> tuple[str, str, Any]:
+    """Parse annotation."""
     desc = ''
     typ_name = ''
 
-    if isinstance(annotation, Annotation):
-        typ_name = annotation.type.__name__
-        desc = annotation.description
-        default = (
-            annotation.default
-            if annotation.default is not inspect._empty
-            else default
-        )
+    if get_origin(annotation) is Annotated:
+        base_type, *metadata = get_args(annotation)
+        typ_name = _type_to_str(base_type)
+
+        for meta in metadata:
+            if isinstance(meta, str):
+                desc = meta
+                break
+            if hasattr(meta, 'description'):
+                desc = getattr(meta, 'description')
+                break
     elif annotation is inspect._empty:
         typ_name = 'Any'
     else:

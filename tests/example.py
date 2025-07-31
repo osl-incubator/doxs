@@ -8,13 +8,9 @@ numpydoc blocks, and preserves the original narrative sections.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 import doxs
-
-# ---------------------------------------------------------------------------
-# 1. Simple function - descriptions provided via YAML in the docstring
-# ---------------------------------------------------------------------------
 
 
 @doxs  # no explicit kwargs - YAML supplies everything
@@ -31,10 +27,6 @@ def add(x: int, y: int) -> int:
     return x + y
 
 
-# ---------------------------------------------------------------------------
-# 2. Generic identity function - no YAML, decorator infers nothing extra
-# ---------------------------------------------------------------------------
-
 T = Any  # showcase that *any* type passes through
 
 
@@ -44,11 +36,6 @@ def identity(value: T) -> T:
     title: Identity function
     summary: Returns *value* unchanged.
     """
-
-
-# ---------------------------------------------------------------------------
-# 3. Class with YAML attributes section
-# ---------------------------------------------------------------------------
 
 
 @doxs
@@ -81,29 +68,20 @@ class BasicCalculator:
         return (self.a + self.b) * scalar
 
 
-# ---------------------------------------------------------------------------
-# 4. Example using inline ``Annotation`` wrappers (type info still merged)
-# ---------------------------------------------------------------------------
-
-
 @doxs
 class FancyCalculator:
     """
-    title: Showcase of ``doxs.Annotation`` inline usage
+    title: Showcase of ``Annotated`` inline usage
     """
 
-    x: doxs.Annotation(float, 'First floating-point operand', default=2.5) = (
-        2.5
-    )
-    y: doxs.Annotation(float, 'Second floating-point operand', default=4.0) = (
-        4.0
-    )
+    x: Annotated[float, doxs.DocString('First floating-point operand')] = 2.5
+    y: Annotated[float, 'Second floating-point operand'] = 4.0
 
     def power(
         self,
-        base: doxs.Annotation(float, 'Base', default=2.0) = 2.0,
-        exp: doxs.Annotation(float, 'Exponent', default=3.0) = 3.0,
-    ) -> doxs.Annotation(float, 'base ** exp'):
+        base: Annotated[float, doxs.DocString('Base')] = 2.0,
+        exp: Annotated[float, 'Exponent'] = 3.0,
+    ) -> Annotated[float, doxs.DocString('base ** exp')]:
         """
         title: Raise *base* to *exp*
         parameters:

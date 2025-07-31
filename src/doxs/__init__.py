@@ -20,7 +20,7 @@ def get_version() -> str:
 
 core = import_module('.core', __name__)
 apply = core.apply
-Annotation = core.Annotation
+DocString = core.DocString
 
 
 class _CallableModule(types.ModuleType):
@@ -42,4 +42,4 @@ __version__ = version
 __author__ = 'Ivan Ogasawara'
 __email__ = 'ivan.ogasawara@gmail.com'
 
-__all__ = ['Annotation', '__author__', '__email__', '__version__', 'apply']
+__all__ = ['DocString', '__author__', '__email__', '__version__', 'apply']

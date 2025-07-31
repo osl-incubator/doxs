@@ -8,6 +8,11 @@ authors = [
 ]
 license = "BSD 3 Clause"
 requires-python = ">=3.9,<4"
+dependencies = [
+  "types-pyyaml >=6",
+  "typing-extensions >=4.14.1",
+]
+
 [build-system]
 requires = ["poetry-core>=2", "poetry>=2"]
 build-backend = "poetry.core.masonry.api"
@@ -51,9 +56,6 @@ makim = "1.20.0"
 virtualenv = "<=20.25.1"
 
 
-
-[tool.poetry.dependencies]
-types-pyyaml = ">=6"
 [tool.bandit]
 exclude_dirs = ["tests"]
 targets = "./"
