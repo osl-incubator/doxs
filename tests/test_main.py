@@ -36,8 +36,8 @@ def test_apply_on_function_generates_parameters_and_returns_sections():
 
     doc = _strip_indent(square.__doc__ or '')
 
-    assert 'Parameters:' in doc
-    assert 'Returns:' in doc
+    assert 'Parameters' in doc
+    assert 'Returns' in doc
     assert 'x : int' in doc
     assert 'The x value' in doc
     assert 'int' in doc
@@ -67,9 +67,9 @@ def test_annotation_defaults_and_description():
 
     doc = _strip_indent(add.__doc__ or '')
     assert 'first term' in doc
-    assert 'Default: 2' in doc
+    assert 'default is `2`' in doc
     assert 'second term' in doc
-    assert 'Default: 3' in doc
+    assert 'default is `3`' in doc
     assert 'sum' in doc
 
 
@@ -87,15 +87,15 @@ def test_apply_on_class_gen_attributes_section_and_auto_decorates_methods():
 
     # ---- Attribute section ----
     cls_doc = _strip_indent(Demo.__doc__ or '')
-    assert 'Attributes:' in cls_doc
+    assert 'Attributes' in cls_doc
     assert 'a : int' in cls_doc and 'Alpha' in cls_doc
     assert 'b : int' in cls_doc and 'Bravo' in cls_doc
 
     # ---- Method section ----
     meth_doc = _strip_indent(Demo.add.__doc__ or '')
-    assert 'Parameters:' in meth_doc
+    assert 'Parameters' in meth_doc
     assert 'value : int' in meth_doc
-    assert 'Returns:' in meth_doc
+    assert 'Returns' in meth_doc
 
 
 def test_idempotency_no_duplicate_sections():
@@ -112,4 +112,4 @@ def test_idempotency_no_duplicate_sections():
 
     assert first_doc == second_doc
     # Ensure only a single *Parameters* marker is present
-    assert _strip_indent(first_doc).count('Parameters:') == 1
+    assert _strip_indent(first_doc).count('Parameters') == 1
