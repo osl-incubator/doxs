@@ -1,6 +1,13 @@
 # Release Notes
 ---
 
+# [0.3.0](https://github.com/osl-incubator/doxs/compare/0.2.0...0.3.0) (2025-08-01)
+
+
+### Features
+
+* Replace homemade Annotation by typing.Annotated ([#6](https://github.com/osl-incubator/doxs/issues/6)) ([f098bab](https://github.com/osl-incubator/doxs/commit/f098bab285039104e33618844058e2f571534a13))
+
 # [0.2.0](https://github.com/osl-incubator/doxs/compare/0.1.0...0.2.0) (2025-07-31)
 
 
