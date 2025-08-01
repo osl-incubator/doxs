@@ -1,6 +1,6 @@
 [project]
 name = "doxs"
-version = "0.4.0"  # semantic-release
+version = "0.5.0"  # semantic-release
 description = "Documetatio from annotations"
 readme = "README.md"
 authors = [

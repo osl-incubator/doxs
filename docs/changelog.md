@@ -1,6 +1,13 @@
 # Release Notes
 ---
 
+# [0.5.0](https://github.com/osl-incubator/doxs/compare/0.4.0...0.5.0) (2025-08-01)
+
+
+### Features
+
+* Improve the class method docstring generation ([#8](https://github.com/osl-incubator/doxs/issues/8)) ([ba6bf89](https://github.com/osl-incubator/doxs/commit/ba6bf89c05c0e837ca5509936dde1a3d8af969fd))
+
 # [0.4.0](https://github.com/osl-incubator/doxs/compare/0.3.0...0.4.0) (2025-08-01)
 
 
