@@ -60,6 +60,8 @@ import yaml
 from typing_extensions import ParamSpec
 from typing_extensions import get_type_hints as get_type_hints_ext
 
+from doxs._validation import validate_schema
+
 __all__ = ['DocString', 'apply']
 _SENTINEL = '__doxs_applied__'
 
@@ -86,6 +88,9 @@ def _parse_yaml(raw: str) -> Dict[str, Any]:
         raise ValueError(f'Docstring is not valid YAML: {exc}') from exc
     if not isinstance(data, dict):
         raise ValueError('YAML root must be a mapping')
+
+    validate_schema(data)
+
     return data
 
 
@@ -126,40 +131,47 @@ def _decorate_class(cls: T, overrides: Dict[str, str]) -> T:
     yaml_dict = _parse_yaml(inspect.getdoc(cls) or '')
     narrative = _narrative(yaml_dict)
 
-    # Build Attributes block
-    attr_lines: List[str] = []
+    # attributes ------------------------------------------------------------
     try:
         annotations = get_type_hints(cls, include_extras=True)
     except TypeError:
         annotations = get_type_hints_ext(cls, include_extras=True)
 
-    for name, annotation in annotations.items():
-        typ, desc, default_val = _parse_annotation(
-            annotation, getattr(cls, name, inspect._empty)
+    a_lines: List[str] = []
+    for name, ann in annotations.items():
+        typ, desc, default = _parse_annotation(
+            ann, getattr(cls, name, inspect._empty)
         )
         desc = overrides.get(
             name, yaml_dict.get('attributes', {}).get(name, desc)
         )
-        first = f'{name} : {typ}'
-        if default_val is not inspect._empty:
-            first += f', default is `{default_val!r}`'
-        attr_lines.append(first)
+        line = f'{name} : {typ}'
+        if default is not inspect._empty:
+            line += f', default is `{default!r}`'
+        a_lines.append(line)
         if desc:
-            attr_lines.append(f'    {desc}')
+            a_lines.append(f'    {desc}')
+    attr_block = '\n'.join(a_lines)
 
-    doc_parts = [narrative] if narrative else []
-    if attr_lines:
-        doc_parts.append('Attributes\n----------\n' + '\n'.join(attr_lines))
+    # optional manual Methods section (user may list in YAML)
+    meth_block = yaml_dict.get('methods', '').strip()
+    parts = [narrative] if narrative else []
+    if attr_block:
+        parts.append('Attributes\n----------\n' + attr_block)
+    if meth_block:
+        parts.append('Methods\n-------\n' + meth_block)
 
-    cls.__doc__ = '\n\n'.join(doc_parts).strip()
+    cls.__doc__ = '\n\n'.join(parts).strip()
 
-    # Auto-decorate methods
-    for name, member in vars(cls).items():
-        if name.startswith('__') or not callable(member):
+    # auto-decorate instance methods
+    for n, m in vars(cls).items():
+        if (
+            n.startswith('__')
+            or not callable(m)
+            or getattr(m, _SENTINEL, False)
+        ):
             continue
-        if getattr(member, _SENTINEL, False):
-            continue
-        setattr(cls, name, apply(member))
+        setattr(cls, n, apply(m))
 
     setattr(cls, _SENTINEL, True)
     return cls
@@ -176,58 +188,100 @@ def _decorate_func(
     yaml_dict = _parse_yaml(inspect.getdoc(func) or '')
     narrative = _narrative(yaml_dict)
 
-    param_descs = {**yaml_dict.get('parameters', {}), **param_over}
-    returns_desc = (
+    params_map = {**yaml_dict.get('parameters', {}), **param_over}
+    returns_txt = (
         returns_over
         if returns_over is not None
         else yaml_dict.get('returns', '')
     )
+    yields_txt = yaml_dict.get('yields', '')
+    receives = yaml_dict.get('receives', '')
+    raises_map = yaml_dict.get('raises', {})
+    warns_map = yaml_dict.get('warnings', {})
+    deprecated = yaml_dict.get('deprecated', '')
+    see_also = yaml_dict.get('see_also', '')
+    notes = yaml_dict.get('notes', '')
+    refs = yaml_dict.get('references', '')
+    examples = yaml_dict.get('examples', '')
 
     sig = inspect.signature(func)
     hints = get_type_hints(func, include_extras=True)
 
-    # Parameters block
+    # Parameters
     p_lines: List[str] = []
-    for name, param in sig.parameters.items():
+    for name, p in sig.parameters.items():
         if name in {'self', 'cls'}:
             continue
-        ann = hints.get(name, param.annotation)
-        default_val = (
-            param.default
-            if param.default is not inspect.Parameter.empty
+        ann = hints.get(name, p.annotation)
+        default = (
+            p.default
+            if p.default is not inspect.Parameter.empty
             else inspect._empty
         )
-        typ, desc_from_ann, default_val = _parse_annotation(ann, default_val)
-        desc = param_descs.get(name, desc_from_ann)
+        typ, desc_from_ann, default = _parse_annotation(ann, default)
+        desc = params_map.get(name, desc_from_ann)
         line = f'{name} : {typ}'
-        if default_val is not inspect._empty:
-            line += f', default is `{default_val!r}`'
+        if default is not inspect._empty:
+            line += f', default is `{default!r}`'
         p_lines.append(line)
         if desc:
             p_lines.append(f'    {desc}')
     param_block = '\n'.join(p_lines) or 'None'
 
-    # Returns block
+    # Returns / Yields / Receives
     ret_ann = hints.get('return', sig.return_annotation)
     ret_type, ret_desc, _ = _parse_annotation(ret_ann, inspect._empty)
-    if returns_desc:
+    if returns_txt:
         ret_desc = (
-            returns_desc
-            if isinstance(returns_desc, str)
-            else '; '.join(returns_desc)
+            returns_txt
+            if isinstance(returns_txt, str)
+            else '; '.join(returns_txt)
         )
-    if not ret_type or ret_type == 'None':
-        returns_block = 'Returns\n-------\nNone'
-    else:
-        returns_block = 'Returns\n-------\n' + ret_type
-        if ret_desc:
-            returns_block += f'\n    {ret_desc}'
 
-    doc_parts = [narrative] if narrative else []
-    doc_parts.append('Parameters\n----------\n' + param_block)
-    doc_parts.append(returns_block)
+    def _simple_block(name: str, text: str) -> str:
+        return f'{name}\n{"-" * len(name)}\n{text.strip()}' if text else ''
 
-    func.__doc__ = '\n\n'.join(doc_parts).strip()
+    returns_block = (
+        _simple_block(
+            'Returns', ret_type + ('\n    ' + ret_desc if ret_desc else '')
+        )
+        if ret_type and ret_type != 'None'
+        else ''
+    )
+    yields_block = _simple_block('Yields', yields_txt)
+    receives_block = _simple_block('Receives', receives)
+
+    # Raises / Warnings
+    def _map_block(title: str, m: Dict[str, str]) -> str:
+        if not m:
+            return ''
+        lines = [f'{k}\n    {v}' if v else k for k, v in m.items()]
+        return f'{title}\n{"-" * len(title)}\n' + '\n'.join(lines)
+
+    raises_block = _map_block('Raises', raises_map)
+    warns_block = _map_block('Warnings', warns_map)
+
+    # Assemble in canonical numpydoc order
+    sections = [
+        s
+        for s in [
+            _simple_block('Deprecated', deprecated),
+            _simple_block('Parameters', param_block),
+            returns_block,
+            yields_block,
+            receives_block,
+            raises_block,
+            warns_block,
+            _simple_block('See Also', see_also),
+            _simple_block('Notes', notes),
+            _simple_block('References', refs),
+            _simple_block('Examples', examples),
+        ]
+        if s
+    ]
+
+    doc = '\n\n'.join([narrative, *sections]).strip()
+    func.__doc__ = doc
     setattr(func, _SENTINEL, True)
     return func
 

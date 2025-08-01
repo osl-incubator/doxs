@@ -1,50 +1,95 @@
-"""tests/example.py - YAML-powered showcase for *doxs*
-=====================================================
-Run this file to see how ``doxs`` reads YAML docstrings, injects the
-numpydoc blocks, and preserves the original narrative sections.
+"""example.py - showcase for YAML-first *doxs*
 
-    python -m tests.example
+Run with:
+    python -m tests/example.py
+
+It prints the generated numpydoc docstrings for a variety of objects.
 """
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Generator, Iterable
 
 import doxs
 
+from doxs import DocString
 
-@doxs  # no explicit kwargs - YAML supplies everything
+
+@doxs
 def add(x: int, y: int) -> int:
     """
-    title: Return the sum of two integers
+    title: Add two integers
     summary: |
-        This function returns the sum of two integer numbers.
+        Returns the sum of *x* and *y*.
     parameters:
-        x: The first operand
-        y: The second operand
-    returns: Sum of *x* and *y*
+        x: first operand
+        y: second operand
+    returns: the arithmetic sum
+    raises:
+        ValueError: If either operand is negative.
+    see_also: identity, multiply
+    notes: |
+        This is a trivial example.
+    examples: |
+        >>> add(2, 3)
+        5
     """
+    if x < 0 or y < 0:
+        raise ValueError
     return x + y
 
 
-T = Any  # showcase that *any* type passes through
-
-
 @doxs
-def identity(value: T) -> T:
+def identity(value: Any) -> Any:
     """
-    title: Identity function
+    title: Identity (deprecated)
+    deprecated: Use ``copy.deepcopy`` instead.
     summary: Returns *value* unchanged.
+    returns: the input value as-is
+    warnings:
+        RuntimeWarning: Passing mutable objects returns a reference.
+    examples: |
+        >>> identity(5)
+        5
     """
+    return value
 
 
 @doxs
+def fib(n: int) -> Generator[int, None, None]:
+    """
+    title: Fibonacci generator
+    parameters:
+        n: Number of terms to generate
+    yields: successive Fibonacci numbers up to *n*
+    examples: |
+        >>> list(fib(5))
+        [0, 1, 1, 2, 3]
+    """
+    a, b = 0, 1
+    for _ in range(n):
+        yield a
+        a, b = b, a + b
+
+
+@doxs
+def accumulate(values: Iterable[int]) -> int:
+    """
+    title: Sum an iterable
+    receives: iterable of integers
+    returns: total sum
+    """
+    return sum(values)
+
+
+@doxs(class_vars={'a': 'Alpha', 'b': 'Bravo'})
 class BasicCalculator:
     """
     title: Very small demo calculator
     attributes:
-        a: First term
-        b: Second term
+        a: First term of internal state
+        b: Second term of internal state
+    methods: add, multiply
     """
 
     a: int = 1
@@ -57,13 +102,12 @@ class BasicCalculator:
         """
         return self.a + self.b
 
-    @doxs
+    @doxs(params={'scalar': 'Factor'}, returns='Scaled sum')
     def multiply(self, scalar: int) -> int:
         """
         title: Multiply by *scalar*
         parameters:
-            scalar: Number to multiply by
-        returns: Scaled value
+            scalar: Number to multiply by (overridden by decorator)
         """
         return (self.a + self.b) * scalar
 
@@ -71,46 +115,38 @@ class BasicCalculator:
 @doxs
 class FancyCalculator:
     """
-    title: Showcase of ``Annotated`` inline usage
+    title: Annotated attribute demo
     """
 
-    x: Annotated[float, doxs.DocString('First floating-point operand')] = 2.5
+    x: Annotated[float, DocString('First floating-point operand')] = 2.5
     y: Annotated[float, 'Second floating-point operand'] = 4.0
 
     def power(
         self,
-        base: Annotated[float, doxs.DocString('Base')] = 2.0,
+        base: Annotated[float, DocString('Base')] = 2.0,
         exp: Annotated[float, 'Exponent'] = 3.0,
-    ) -> Annotated[float, doxs.DocString('base ** exp')]:
+    ) -> Annotated[float, DocString('base ** exp')]:
         """
         title: Raise *base* to *exp*
         parameters:
-            base: The base number
-            exp: The exponent value
-        returns: Result of ``base ** exp``
+            base: the base number
+            exp: the exponent value
+        returns: result of ``base ** exp``
         """
         return base**exp
 
-
-# ---------------------------------------------------------------------------
-# 5.  Top-level constants (unrelated to *doxs* - just for completeness)
-# ---------------------------------------------------------------------------
 
 PI: float = 3.141592653589793
 E: float = 2.718281828459045
 
 
-# ---------------------------------------------------------------------------
-# 6.  Mini demo when executed as a module
-# ---------------------------------------------------------------------------
-
-
-def _demo() -> None:
+def _demo() -> None:  # pragma: no cover
     print('Generated docstrings\n' + '=' * 80)
-
     for obj in (
         add,
         identity,
+        fib,
+        accumulate,
         BasicCalculator,
         BasicCalculator.add,
         BasicCalculator.multiply,

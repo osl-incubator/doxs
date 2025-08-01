@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/doxs/schema.json",
+  "title": "doxs YAML docstring",
+  "type": "object",
+  "additionalProperties": false,
+
+  "properties": {
+    "title":        { "type": "string" },
+    "summary":      { "type": "string" },
+    "deprecated":   { "type": "string" },
+
+    "parameters": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+    },
+
+    "returns":      { "type": "string" },
+    "yields":       { "type": "string" },
+    "receives":     { "type": "string" },
+
+    "raises": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+    },
+
+    "warnings": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+    },
+
+    "see_also":  {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      ]
+    },
+
+    "notes":       { "type": "string" },
+    "references":  { "type": "string" },
+    "examples":    { "type": "string" },
+
+    "attributes": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+    },
+
+    "methods": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      ]
+    }
+  },
+
+  "required": ["title"]
+}
