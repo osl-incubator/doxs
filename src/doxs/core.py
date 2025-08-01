@@ -124,14 +124,14 @@ def apply(
     return decorator if _obj is None else decorator(_obj)
 
 
-def _decorate_class(cls: T, overrides: Dict[str, str]) -> T:
+def _decorate_class(cls: T, overrides: dict[str, str]) -> T:
     if getattr(cls, _SENTINEL, False):
         return cls
 
     yaml_dict = _parse_yaml(inspect.getdoc(cls) or '')
     narrative = _narrative(yaml_dict)
 
-    # attributes ------------------------------------------------------------
+    # -------- build *Attributes* -----------------------------------------
     try:
         annotations = get_type_hints(cls, include_extras=True)
     except TypeError:
@@ -153,8 +153,37 @@ def _decorate_class(cls: T, overrides: Dict[str, str]) -> T:
             a_lines.append(f'    {desc}')
     attr_block = '\n'.join(a_lines)
 
-    # optional manual Methods section (user may list in YAML)
-    meth_block = yaml_dict.get('methods', '').strip()
+    # -------- build *Methods* automatically ------------------------------
+    def _fmt_sig(sig: inspect.Signature) -> str:
+        parts: List[str] = []
+        for p in sig.parameters.values():
+            if p.name in {'self', 'cls'}:
+                continue
+            if p.default is inspect.Parameter.empty:
+                parts.append(p.name)
+            else:
+                parts.append(f'{p.name}={p.default!r}')
+        return '(' + ', '.join(parts) + ')'
+
+    m_lines: List[str] = []
+    for name, member in vars(cls).items():
+        if name.startswith('__') or not callable(member):
+            continue
+
+        sig = inspect.signature(member)
+        try:
+            yml = _parse_yaml(inspect.getdoc(member) or '')
+            short = str(
+                yml.get('title', '') or yml.get('summary', '')
+            ).splitlines()[0]
+        except Exception:
+            short = ''
+
+        m_lines.append(f'{name}{_fmt_sig(sig)}')  # e.g. colorspace(c='rgb')
+        if short:
+            m_lines.append(f'    {short}')
+    meth_block = '\n'.join(m_lines)
+
     parts = [narrative] if narrative else []
     if attr_block:
         parts.append('Attributes\n----------\n' + attr_block)
@@ -163,7 +192,7 @@ def _decorate_class(cls: T, overrides: Dict[str, str]) -> T:
 
     cls.__doc__ = '\n\n'.join(parts).strip()
 
-    # auto-decorate instance methods
+    # auto-decorate methods (after documentation extracted)
     for n, m in vars(cls).items():
         if (
             n.startswith('__')
