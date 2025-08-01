@@ -23,6 +23,9 @@ def add(x: int, y: int) -> int:
 The decorator will append a numpydoc block like:
 
 ```
+Return the sum of two integers.
+
+This function returns the sum of two integer numbers.
 
 Parameters
 ----------
@@ -37,13 +40,14 @@ from __future__ import annotations
 import inspect
 import textwrap
 
+from dataclasses import dataclass
 from typing import (
+    Annotated,
     Any,
     Callable,
     Dict,
     List,
     Optional,
-    Type,
     TypeVar,
     Union,
     get_args,
@@ -51,132 +55,105 @@ from typing import (
     get_type_hints,
 )
 
-import yaml  # PyYAML dependency
+import yaml
 
 from typing_extensions import ParamSpec
+from typing_extensions import get_type_hints as get_type_hints_ext
 
-__all__ = ['Annotation', 'apply']
+__all__ = ['DocString', 'apply']
 _SENTINEL = '__doxs_applied__'
 
 T = TypeVar('T', bound=type)
 P = ParamSpec('P')
 R = TypeVar('R')
 
-# ---------------------------------------------------------------------------
-# Small helper to parse YAML docstrings safely
-# ---------------------------------------------------------------------------
+
+@dataclass
+class DocString:
+    """Carry a description inside ``typing.Annotated`` metadata."""
+
+    description: str
 
 
-def _parse_yaml_doc(raw: Optional[str]) -> Dict[str, Any]:
+def _parse_yaml(raw: str) -> Dict[str, Any]:
+    """Parse *raw* as YAML or raise ``ValueError``."""
+
     if not raw or ':' not in raw:
-        return {}
+        raise ValueError("Docstring is not valid YAML: missing ':'")
     try:
         data = yaml.safe_load(textwrap.dedent(raw))
-    except yaml.YAMLError:
-        return {}
-    return data if isinstance(data, dict) else {}
+    except yaml.YAMLError as exc:  # pragma: no cover
+        raise ValueError(f'Docstring is not valid YAML: {exc}') from exc
+    if not isinstance(data, dict):
+        raise ValueError('YAML root must be a mapping')
+    return data
 
 
-def _compose_narrative(yaml_data: Dict[str, Any]) -> str:
-    """Build plain-text *title/summary* block from YAML."""
-
-    title = str(yaml_data.get('title', '')).strip()
-    summary = str(yaml_data.get('summary', '')).rstrip()
-
+def _narrative(yaml_dict: Dict[str, Any]) -> str:
+    title = str(yaml_dict.get('title', '')).strip()
+    summary = str(yaml_dict.get('summary', '')).rstrip()
     parts: List[str] = []
     if title:
         parts.append(title if title.endswith('.') else title + '.')
     if summary:
-        # Already multi-line (from ``|``): keep as-is; else treat as one-liner.
-        if '\n' in summary:
-            parts.append(summary)
-        else:
-            parts.append(summary)
+        parts.append(summary)
     return '\n\n'.join(parts).strip()
-
-
-# ---------------------------------------------------------------------------
-# Public helper class
-# ---------------------------------------------------------------------------
-
-
-class Annotation:
-    """Wrap a type annotation with extra metadata."""
-
-    def __init__(
-        self, type_: Type[Any], description: str, default: Any = inspect._empty
-    ) -> None:
-        """Initialize the class object."""
-        self.type = type_
-        self.description = description
-        self.default = default
-
-    def __repr__(self) -> str:  # pragma: no cover
-        """Return the object representation."""
-        default_repr = (
-            '…' if self.default is inspect._empty else repr(self.default)
-        )
-        return (
-            f'Annotation({self.type.__name__}, '
-            f'{self.description!r}, default={default_repr})'
-        )
-
-
-# ---------------------------------------------------------------------------
-# Decorator entry point
-# ---------------------------------------------------------------------------
 
 
 def apply(
     _obj: Any = None,
     *,
-    # Back-compat kwargs (optional)
     class_vars: Optional[Dict[str, str]] = None,
     params: Optional[Dict[str, str]] = None,
     returns: Optional[Union[str, List[str]]] = None,
 ) -> Any:
-    """Decorate a class or function and inject numpydoc blocks.
-
-    Preferred usage expects metadata to be provided inside a YAML docstring,
-    but legacy kwargs (*class_vars*, *params*, *returns*) are still honoured
-    and override YAML values when given.
-    """
+    """Decorate a class or callable and convert YAML → numpydoc."""
 
     def decorator(obj: Any) -> Any:
         if inspect.isclass(obj):
-            return _apply_to_class(
-                obj, yaml_first=True, overrides=class_vars or {}
-            )
+            return _decorate_class(obj, class_vars or {})
         if callable(obj):
-            return _apply_to_func(
-                obj, yaml_first=True, params=params, returns=returns
-            )
+            return _decorate_func(obj, params or {}, returns)
         return obj
 
     return decorator if _obj is None else decorator(_obj)
 
 
-# ---------------------------------------------------------------------------
-# Class handling
-# ---------------------------------------------------------------------------
-
-
-def _apply_to_class(
-    cls: T, *, yaml_first: bool, overrides: Dict[str, str]
-) -> T:
+def _decorate_class(cls: T, overrides: Dict[str, str]) -> T:
     if getattr(cls, _SENTINEL, False):
         return cls
 
-    yaml_data = _parse_yaml_doc(inspect.getdoc(cls)) if yaml_first else {}
-    narrative = _compose_narrative(yaml_data)
+    yaml_dict = _parse_yaml(inspect.getdoc(cls) or '')
+    narrative = _narrative(yaml_dict)
 
-    _inject_attributes_section(
-        cls, {**yaml_data.get('attributes', {}), **overrides}
-    )
+    # Build Attributes block
+    attr_lines: List[str] = []
+    try:
+        annotations = get_type_hints(cls, include_extras=True)
+    except TypeError:
+        annotations = get_type_hints_ext(cls, include_extras=True)
 
-    # Merge narrative first (before auto-decorating methods)
-    cls.__doc__ = _merge_docstring(narrative, cls.__doc__ or '')
+    for name, annotation in annotations.items():
+        typ, desc, default_val = _parse_annotation(
+            annotation, getattr(cls, name, inspect._empty)
+        )
+        desc = overrides.get(
+            name, yaml_dict.get('attributes', {}).get(name, desc)
+        )
+        first = f'{name} : {typ}'
+        if default_val is not inspect._empty:
+            first += f', default is `{default_val!r}`'
+        attr_lines.append(first)
+        if desc:
+            attr_lines.append(f'    {desc}')
 
+    doc_parts = [narrative] if narrative else []
+    if attr_lines:
+        doc_parts.append('Attributes\n----------\n' + '\n'.join(attr_lines))
+
+    cls.__doc__ = '\n\n'.join(doc_parts).strip()
+
+    # Auto-decorate methods
     for name, member in vars(cls).items():
         if name.startswith('__') or not callable(member):
             continue
@@ -188,62 +165,49 @@ def _apply_to_class(
     return cls
 
 
-# ---------------------------------------------------------------------------
-# Function / method handling
-# ---------------------------------------------------------------------------
-
-
-def _apply_to_func(
+def _decorate_func(
     func: Callable[P, R],
-    *,
-    yaml_first: bool,
-    params: Optional[Dict[str, str]] = None,
-    returns: Optional[Union[str, List[str]]] = None,
+    param_over: Dict[str, str],
+    returns_over: Optional[Union[str, List[str]]],
 ) -> Callable[P, R]:
-    if getattr(func, _SENTINEL, False):  # idempotent
+    if getattr(func, _SENTINEL, False):
         return func
 
-    raw_doc = inspect.getdoc(func) or ''
-    yaml_data = _parse_yaml_doc(raw_doc)
-    narrative = _compose_narrative(yaml_data)
+    yaml_dict = _parse_yaml(inspect.getdoc(func) or '')
+    narrative = _narrative(yaml_dict)
 
-    # Merge precedence - decorator kwargs override YAML
-    param_descs = {**yaml_data.get('parameters', {}), **(params or {})}
+    param_descs = {**yaml_dict.get('parameters', {}), **param_over}
     returns_desc = (
-        returns if returns is not None else yaml_data.get('returns', '')
+        returns_over
+        if returns_over is not None
+        else yaml_dict.get('returns', '')
     )
 
     sig = inspect.signature(func)
-    hints = get_type_hints(func)
+    hints = get_type_hints(func, include_extras=True)
 
-    # ---------------- "Parameters" block ----------------
-    param_lines: List[str] = []
+    # Parameters block
+    p_lines: List[str] = []
     for name, param in sig.parameters.items():
         if name in {'self', 'cls'}:
             continue
-
-        annotation = hints.get(name, param.annotation)
+        ann = hints.get(name, param.annotation)
         default_val = (
             param.default
             if param.default is not inspect.Parameter.empty
             else inspect._empty
         )
-
-        typ, desc_from_ann, default_val = _parse_annotation(
-            annotation, default_val
-        )
-        desc = param_descs.get(name, desc_from_ann or '')
-
-        first = f'{name} : {typ}'
+        typ, desc_from_ann, default_val = _parse_annotation(ann, default_val)
+        desc = param_descs.get(name, desc_from_ann)
+        line = f'{name} : {typ}'
         if default_val is not inspect._empty:
-            first += f', default is `{default_val!r}`'
-        param_lines.append(first)
+            line += f', default is `{default_val!r}`'
+        p_lines.append(line)
         if desc:
-            param_lines.append(f'    {desc}')
+            p_lines.append(f'    {desc}')
+    param_block = '\n'.join(p_lines) or 'None'
 
-    param_block = '\n'.join(param_lines) or 'None'
-
-    # ------------------ "Returns" block ------------------
+    # Returns block
     ret_ann = hints.get('return', sig.return_annotation)
     ret_type, ret_desc, _ = _parse_annotation(ret_ann, inspect._empty)
     if returns_desc:
@@ -252,7 +216,6 @@ def _apply_to_func(
             if isinstance(returns_desc, str)
             else '; '.join(returns_desc)
         )
-
     if not ret_type or ret_type == 'None':
         returns_block = 'Returns\n-------\nNone'
     else:
@@ -260,68 +223,29 @@ def _apply_to_func(
         if ret_desc:
             returns_block += f'\n    {ret_desc}'
 
-    generated_sections = (
-        f'Parameters\n----------\n{param_block}\n\n{returns_block}'
-    )
+    doc_parts = [narrative] if narrative else []
+    doc_parts.append('Parameters\n----------\n' + param_block)
+    doc_parts.append(returns_block)
 
-    # Build final docstring: narrative + two line breaks + generated sections
-    final_doc = (narrative.strip() + '\n\n' + generated_sections).strip()
-
-    func.__doc__ = final_doc
+    func.__doc__ = '\n\n'.join(doc_parts).strip()
     setattr(func, _SENTINEL, True)
     return func
-
-
-# ---------------------------------------------------------------------------
-# Attributes helper
-# ---------------------------------------------------------------------------
-
-
-def _inject_attributes_section(
-    cls: Type[Any], descriptions: Dict[str, str]
-) -> None:
-    annotations = getattr(cls, '__annotations__', {})
-    if not annotations:
-        return
-
-    lines: List[str] = []
-    for name, annotation in annotations.items():
-        typ, desc, default_val = _parse_annotation(
-            annotation, getattr(cls, name, inspect._empty)
-        )
-        if name in descriptions:
-            desc = descriptions[name]
-
-        first = f'{name} : {typ}'
-        if default_val is not inspect._empty:
-            first += f', default is `{default_val!r}`'
-        lines.append(first)
-        if desc:
-            lines.append(f'    {desc}')
-
-    if lines:
-        cls.__doc__ = _merge_docstring(
-            cls.__doc__, 'Attributes\n----------\n' + '\n'.join(lines)
-        )
-
-
-# ---------------------------------------------------------------------------
-# Shared utilities
-# ---------------------------------------------------------------------------
 
 
 def _parse_annotation(annotation: Any, default: Any) -> tuple[str, str, Any]:
     desc = ''
     typ_name = ''
 
-    if isinstance(annotation, Annotation):
-        typ_name = annotation.type.__name__
-        desc = annotation.description
-        default = (
-            annotation.default
-            if annotation.default is not inspect._empty
-            else default
-        )
+    if get_origin(annotation) is Annotated:
+        base, *meta = get_args(annotation)
+        typ_name = _type_to_str(base)
+        for m in meta:
+            if isinstance(m, str):
+                desc = m
+                break
+            if hasattr(m, 'description'):
+                desc = m.description
+                break
     elif annotation is inspect._empty:
         typ_name = 'Any'
     else:
@@ -336,12 +260,3 @@ def _type_to_str(tp: Any) -> str:
         return getattr(tp, '__name__', str(tp))
     args = ', '.join(_type_to_str(arg) for arg in get_args(tp))
     return f'{origin.__name__}[{args}]'
-
-
-def _merge_docstring(original: Optional[str], generated: str) -> str:
-    original = original or ''
-    return (
-        original.strip()
-        if generated in original
-        else (original.rstrip() + '\n\n' + generated).strip()
-    )
