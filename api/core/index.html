@@ -474,9 +474,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#doxs.core.Annotation" class="md-nav__link">
+  <a href="#doxs.core.DocString" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Annotation
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DocString
     </span>
   </a>
   
@@ -564,9 +564,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#doxs.core.Annotation" class="md-nav__link">
+  <a href="#doxs.core.DocString" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Annotation
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DocString
     </span>
   </a>
   
@@ -632,7 +632,11 @@
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
 </code></pre></div>
 <p>The decorator will append a numpydoc block like:</p>
-<div class="language-text highlight"><pre><span></span><code>Parameters
+<div class="language-text highlight"><pre><span></span><code>Return the sum of two integers.
+
+This function returns the sum of two integer numbers.
+
+Parameters
 ----------
 x : int, default is `…`
     The first operand
@@ -649,10 +653,15 @@ x : int, default is `…`
 <p><span class="doc-section-title">Classes:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-          <b><code><a class="autorefs autorefs-internal" title="            Annotation (doxs.core.Annotation)" href="#doxs.core.Annotation">Annotation</a></code></b>
+          <b><code><a class="autorefs autorefs-internal" title="            DocString
+
+
+  
+      dataclass
+   (doxs.core.DocString)" href="#doxs.core.DocString">DocString</a></code></b>
           –
           <div class="doc-md-description">
-            <p>Wrap a type annotation with extra metadata.</p>
+            <p>Carry a description inside <code class="language-python highlight"><span class="n">typing</span><span class="o">.</span><span class="n">Annotated</span></code> metadata.</p>
           </div>
         </li>
     </ul>
@@ -666,7 +675,7 @@ x : int, default is `…`
             <b><code><a class="autorefs autorefs-internal" title="            apply (doxs.core.apply)" href="#doxs.core.apply">apply</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Decorate a class or function and inject numpydoc blocks.</p>
+              <p>Decorate a class or callable and convert YAML → numpydoc.</p>
             </div>
           </li>
     </ul>
@@ -688,22 +697,22 @@ x : int, default is `…`
 
 
 
-<h2 id="doxs.core.Annotation" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Annotation</span>
+<h2 id="doxs.core.DocString" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">DocString</span>
 
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
 
 </h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span class="nf">Annotation</span><span class="p">(</span>
-    <span class="n">type_</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Type" href="https://docs.python.org/3/library/typing.html#typing.Type">Type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span>
-    <span class="n">description</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span>
-    <span class="n">default</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span> <span class="o">=</span> <span class="n"><span title="inspect._empty">_empty</span></span><span class="p">,</span>
-<span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span class="nf">DocString</span><span class="p">(</span><span class="n">description</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
 
-        <p>Wrap a type annotation with extra metadata.</p>
+        <p>Carry a description inside <code class="language-python highlight"><span class="n">typing</span><span class="o">.</span><span class="n">Annotated</span></code> metadata.</p>
 
 
 
@@ -715,23 +724,6 @@ x : int, default is `…`
 
 
 
-                  <details class="quote">
-                    <summary>Source code in <code>src/doxs/core.py</code></summary>
-                    <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">type_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">_empty</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the class object.&quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">type_</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="n">default</span>
-</code></pre></div></td></tr></table></div>
-                  </details>
 
 
 
@@ -773,64 +765,41 @@ x : int, default is `…`
 
     <div class="doc doc-contents ">
 
-        <p>Decorate a class or function and inject numpydoc blocks.</p>
-<p>Preferred usage expects metadata to be provided inside a YAML docstring,
-but legacy kwargs (<em>class_vars</em>, <em>params</em>, <em>returns</em>) are still honoured
-and override YAML values when given.</p>
+        <p>Decorate a class or callable and convert YAML → numpydoc.</p>
 
 
             <details class="quote">
               <summary>Source code in <code>src/doxs/core.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">130</span>
-<span class="normal">131</span>
-<span class="normal">132</span>
-<span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
     <span class="n">_obj</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="c1"># Back-compat kwargs (optional)</span>
     <span class="n">class_vars</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">returns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorate a class or function and inject numpydoc blocks.</span>
-
-<span class="sd">    Preferred usage expects metadata to be provided inside a YAML docstring,</span>
-<span class="sd">    but legacy kwargs (*class_vars*, *params*, *returns*) are still honoured</span>
-<span class="sd">    and override YAML values when given.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorate a class or callable and convert YAML → numpydoc.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">_apply_to_class</span><span class="p">(</span>
-                <span class="n">obj</span><span class="p">,</span> <span class="n">yaml_first</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">overrides</span><span class="o">=</span><span class="n">class_vars</span> <span class="ow">or</span> <span class="p">{}</span>
-            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">_decorate_class</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">class_vars</span> <span class="ow">or</span> <span class="p">{})</span>
         <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">_apply_to_func</span><span class="p">(</span>
-                <span class="n">obj</span><span class="p">,</span> <span class="n">yaml_first</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">returns</span><span class="o">=</span><span class="n">returns</span>
-            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">_decorate_func</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">params</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">returns</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">obj</span>
 
     <span class="k">return</span> <span class="n">decorator</span> <span class="k">if</span> <span class="n">_obj</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">decorator</span><span class="p">(</span><span class="n">_obj</span><span class="p">)</span>
