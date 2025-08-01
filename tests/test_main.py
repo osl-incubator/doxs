@@ -1,11 +1,10 @@
-"""tests/test_core.py - unit tests for YAML-powered *doxs*
-
-The suite verifies that:
-* The decorator (@doxs or @doxs(...)) injects *Parameters* / *Returns*.
-* Generic type printing works (e.g. list[int]).
-* `typing.Annotated` descriptions and defaults propagate.
+"""tests/test_core.py - unit tests for YAML-first *doxs*
+Verify that:
+* YAML docstrings are converted to numpydoc blocks.
+* Generic type printing works (`list[int]`).
+* `typing.Annotated` metadata propagates.
 * Class-level decoration adds *Attributes* and auto-decorates methods.
-* The decorator is idempotent (no duplicate sections).
+* The decorator is idempotent.
 """
 
 from __future__ import annotations
@@ -17,94 +16,87 @@ import doxs
 from doxs import DocString
 
 
-def _strip_indent(text: str) -> str:
-    lines = [ln.rstrip() for ln in text.splitlines()]
-    while lines and not lines[0]:
-        lines.pop(0)
-    while lines and not lines[-1]:
-        lines.pop()
-    return '\n'.join(lines)
+def _strip(text: str) -> str:
+    """Normalise whitespace."""
+    return '\n'.join(ln.rstrip() for ln in text.splitlines() if ln.rstrip())
 
 
-def test_apply_on_function_generates_parameters_and_returns_sections():
-    """Decorating a function should inject the expected docstring blocks."""
+def test_function_parameters_and_returns():
+    """Decorator should inject Parameters / Returns blocks."""
 
     @doxs(params={'x': 'The x value'}, returns='x squared')
     def square(x: int) -> int:
+        """
+        title: square a value
+        parameters:
+            x: placeholder  # will be overridden
+        returns: placeholder  # will be overridden
+        """
         return x * x
 
-    doc = _strip_indent(square.__doc__ or '')
-
-    assert 'Parameters' in doc
-    assert 'Returns' in doc
-    assert 'x : int' in doc
-    assert 'The x value' in doc
-    assert 'int' in doc
+    doc = _strip(square.__doc__ or '')
+    assert 'Parameters' in doc and 'Returns' in doc
+    assert 'x : int' in doc and 'The x value' in doc
     assert 'x squared' in doc
 
 
 def test_generic_type_rendering():
-    """Type hints such as ``list[int]`` should be rendered nicely."""
-
     @doxs
     def give_first(values: list[int]) -> int:
+        """title: generic list example"""
         return values[0]
 
-    doc = give_first.__doc__ or ''
-    assert 'values : list[int]' in doc
+    assert 'values : list[int]' in (give_first.__doc__ or '')
 
 
-def test_annotated_defaults_and_description():
-    """`Annotated` wrapper should propagate description and default."""
-
+def test_annotated_descriptions_and_defaults():
     @doxs
     def add(
         x: Annotated[int, DocString('first term')] = 2,
         y: Annotated[int, 'second term'] = 3,
     ) -> Annotated[int, DocString('sum')]:
+        """title: add two numbers"""
         return x + y
 
-    doc = _strip_indent(add.__doc__ or '')
-    assert 'first term' in doc
-    assert 'default is `2`' in doc
-    assert 'second term' in doc
-    assert 'default is `3`' in doc
+    doc = _strip(add.__doc__ or '')
+    assert 'first term' in doc and 'default is `2`' in doc
+    assert 'second term' in doc and 'default is `3`' in doc
     assert 'sum' in doc
 
 
-def test_apply_on_class_gen_attributes_section_and_auto_decorates_methods():
-    """Class-level application should document attributes **and** methods."""
-
+def test_class_attributes_and_methods():
     @doxs(class_vars={'a': 'Alpha', 'b': 'Bravo'})
     class Demo:
+        """title: demo class"""
+
         a: int = 1
         b: int = 2
 
         def add(self, value: int) -> int:
-            """Arbitrary text that should be preserved."""
+            """title: add internal attrs"""
             return self.a + self.b + value
 
-    cls_doc = _strip_indent(Demo.__doc__ or '')
-    assert 'Attributes' in cls_doc
-    assert 'a : int' in cls_doc and 'Alpha' in cls_doc
+    cls_doc = _strip(Demo.__doc__ or '')
+    assert (
+        'Attributes' in cls_doc and 'a : int' in cls_doc and 'Alpha' in cls_doc
+    )
     assert 'b : int' in cls_doc and 'Bravo' in cls_doc
 
-    meth_doc = _strip_indent(Demo.add.__doc__ or '')
-    assert 'Parameters' in meth_doc
-    assert 'value : int' in meth_doc
-    assert 'Returns' in meth_doc
+    meth_doc = _strip(Demo.add.__doc__ or '')
+    assert (
+        'Parameters' in meth_doc
+        and 'value : int' in meth_doc
+        and 'Returns' in meth_doc
+    )
 
 
-def test_idempotency_no_duplicate_sections():
-    """Calling the decorator twice should not duplicate generated text."""
-
+def test_idempotency():
     @doxs
     def mul(x: int, y: int) -> int:
+        """title: multiply two ints"""
         return x * y
 
-    first_doc = mul.__doc__ or ''
-    doxs(mul)  # second application is a no-op
-    second_doc = mul.__doc__ or ''
-
-    assert first_doc == second_doc
-    assert _strip_indent(first_doc).count('Parameters') == 1
+    first = mul.__doc__ or ''
+    doxs(mul)
+    second = mul.__doc__ or ''
+    assert first == second and first.count('Parameters') == 1
