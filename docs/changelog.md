@@ -1,6 +1,13 @@
 # Release Notes
 ---
 
+# [0.4.0](https://github.com/osl-incubator/doxs/compare/0.3.0...0.4.0) (2025-08-01)
+
+
+### Features
+
+* Add initial schema validation ([#7](https://github.com/osl-incubator/doxs/issues/7)) ([a647142](https://github.com/osl-incubator/doxs/commit/a64714264bec158fdbb8395a66532fbcf8c6f458))
+
 # [0.3.0](https://github.com/osl-incubator/doxs/compare/0.2.0...0.3.0) (2025-08-01)
 
 
