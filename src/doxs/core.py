@@ -23,6 +23,9 @@ def add(x: int, y: int) -> int:
 The decorator will append a numpydoc block like:
 
 ```
+Return the sum of two integers.
+
+This function returns the sum of two integer numbers.
 
 Parameters
 ----------
@@ -65,21 +68,11 @@ P = ParamSpec('P')
 R = TypeVar('R')
 
 
-# ---------------------------------------------------------------------------
-# Helper: metadata wrapper for Annotated
-# ---------------------------------------------------------------------------
-
-
 @dataclass
 class DocString:
     """Carry a description inside ``typing.Annotated`` metadata."""
 
     description: str
-
-
-# ---------------------------------------------------------------------------
-# YAML utils
-# ---------------------------------------------------------------------------
 
 
 def _parse_yaml(raw: str) -> Dict[str, Any]:
@@ -107,11 +100,6 @@ def _narrative(yaml_dict: Dict[str, Any]) -> str:
     return '\n\n'.join(parts).strip()
 
 
-# ---------------------------------------------------------------------------
-# Decorator entry point
-# ---------------------------------------------------------------------------
-
-
 def apply(
     _obj: Any = None,
     *,
@@ -129,11 +117,6 @@ def apply(
         return obj
 
     return decorator if _obj is None else decorator(_obj)
-
-
-# ---------------------------------------------------------------------------
-# Class decoration
-# ---------------------------------------------------------------------------
 
 
 def _decorate_class(cls: T, overrides: Dict[str, str]) -> T:
@@ -180,11 +163,6 @@ def _decorate_class(cls: T, overrides: Dict[str, str]) -> T:
 
     setattr(cls, _SENTINEL, True)
     return cls
-
-
-# ---------------------------------------------------------------------------
-# Function / method decoration
-# ---------------------------------------------------------------------------
 
 
 def _decorate_func(
@@ -252,11 +230,6 @@ def _decorate_func(
     func.__doc__ = '\n\n'.join(doc_parts).strip()
     setattr(func, _SENTINEL, True)
     return func
-
-
-# ---------------------------------------------------------------------------
-# Annotation helper
-# ---------------------------------------------------------------------------
 
 
 def _parse_annotation(annotation: Any, default: Any) -> tuple[str, str, Any]:
