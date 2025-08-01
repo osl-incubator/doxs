@@ -12,12 +12,13 @@ from __future__ import annotations
 from typing import Annotated
 
 import doxs
+import pytest
 
 from doxs import DocString
 
 
 def _strip(text: str) -> str:
-    """Normalise whitespace."""
+    """Normalize whitespace."""
     return '\n'.join(ln.rstrip() for ln in text.splitlines() if ln.rstrip())
 
 
@@ -100,3 +101,19 @@ def test_idempotency():
     doxs(mul)
     second = mul.__doc__ or ''
     assert first == second and first.count('Parameters') == 1
+
+
+def test_invalid_yaml_docstring_raises():
+    """Check a docstring missing the required ``title`` key."""
+
+    # YAML lacks the required 'title:' field
+    with pytest.raises(ValueError):
+
+        @doxs
+        def bad(x: int) -> int:
+            """
+            parameters:
+                x: just a number
+            returns: the same number
+            """
+            return x

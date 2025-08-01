@@ -65,6 +65,9 @@ jobs:
         run: |
           makim tests.unit
 
+      - name: Run example
+        run: python tests/example.py
+
       - name: Run style checks
         if: success() || failure()
         run: |

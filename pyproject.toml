@@ -21,8 +21,10 @@ build-backend = "poetry.core.masonry.api"
 packages = [
   {include = "doxs", from="src"},
 ]
-include = ["src/doxs/py.typed"]
-
+include = [
+  "src/doxs/py.typed",
+  "src/doxs/schema.json",
+]
 exclude = [
   ".git/*",
   ".env*",
